@@ -1,3 +1,5 @@
+import datetime
+import asyncio
 import os
 from dotenv import load_dotenv
 from logging import INFO
@@ -23,10 +25,53 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 # TODO: Appending info to a notification for example URL.
 
 
+class Date:
+    # Compare two datetime.date Objects.
+    # Return the first one if greater, and the second one if not.
+    def compare(first: datetime.date, second: datetime.date):
+        if second <= first:
+            return second
+        else:
+            return first
+
+    def get_day(date: datetime.date):
+        return date.day
+
+    def get_month(date: datetime.date):
+        return date.month
+
+    def get_year(date: datetime.date):
+        return date.year
+
+    @staticmethod
+    def get_current_date():
+        return datetime.date.today()
+
+
 async def start(update: Update, _: CallbackContext) -> None:
     await update.message.reply_text(
         "Hello! I am your scheduling assistant.\n\nYou can use me to schedule events, set reminders, and manage your daily tasks.\n\nCommands:\n/start - Get this welcome message\n/add_event - Add a new event\n/list_events - View all scheduled events\n/delete_event - Remove an event\n\nLet’s get started!"
     )
+
+
+# How to properly handle periods?
+# How do I know if user wants to set every week,
+# everyday, or every hour remainder?
+async def set_hourly_schedule(update: Update, _: CallbackContext, period: float = 1):
+    if period < 1 or isinstance(period, int) == False:
+        await update.message.reply_text("The number of hours can only be an integer.")
+        return
+
+    while True:
+        await asyncio.sleep(period * 3600)
+        await update.message.reply_text("The alarm has went off!")
+
+
+async def get_current_date(update: Update, _: CallbackContext) -> None:
+    date = Date()
+    current_day = date.get_current_date()
+
+    await update.message.reply_text("The current day is: " + str(current_day))
 
 
 async def echo(update: Update, _: CallbackContext) -> None:
@@ -38,6 +83,8 @@ def main() -> None:
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("get_current_day", get_current_date))
+    app.add_handler(CommandHandler("set_hourly_remainder", set_hourly_schedule))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     logger.info("Application started.")
